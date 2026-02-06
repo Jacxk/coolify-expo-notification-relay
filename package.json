@@ -1,0 +1,26 @@
+{
+  "name": "coolify-expo-notification-relay",
+  "version": "1.0.0",
+  "description": "Webhook relay to send Coolify events to Expo push notifications.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Jacxk/Coolifynager-Notification-Relay.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Jacxk/Coolifynager-Notification-Relay/issues"
+  },
+  "homepage": "https://github.com/Jacxk/Coolifynager-Notification-Relay#readme",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^5.2.1"
+  }
+}
