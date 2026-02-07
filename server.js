@@ -7,7 +7,6 @@ const WEBHOOK_PATH = process.env.WEBHOOK_PATH || "/webhook";
 const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET || "";
 const EXPO_PUSH_URL =
   process.env.EXPO_PUSH_URL || "https://exp.host/--/api/v2/push/send";
-const EXPO_ACCESS_TOKEN = process.env.EXPO_ACCESS_TOKEN || "";
 const EXPO_TITLE_PREFIX = process.env.EXPO_TITLE_PREFIX || "Coolify";
 const EXPO_BODY_FALLBACK =
   process.env.EXPO_BODY_FALLBACK || "Coolify event received";
@@ -39,7 +38,7 @@ const relayUrls = WEBHOOK_RELAY_URLS.split(",")
 
 if (!tokens.length) {
   throw new Error(
-    "EXPO_PUSH_TOKENS is required and must contain at least one token."
+    "EXPO_PUSH_TOKENS is required and must contain at least one token.",
   );
 }
 
@@ -130,7 +129,7 @@ async function relayPayload(payload) {
           error: error instanceof Error ? error.message : "Unknown error",
         };
       }
-    })
+    }),
   );
 
   return results;
@@ -180,19 +179,14 @@ app.post(WEBHOOK_PATH, async (request, response) => {
     title: notificationTitle,
   });
 
-  const headers = {
-    "Content-Type": "application/json",
-  };
-  if (EXPO_ACCESS_TOKEN) {
-    headers.Authorization = `Bearer ${EXPO_ACCESS_TOKEN}`;
-  }
-
   const relayPromise = relayPayload(payload);
 
   try {
     const expoResponse = await fetch(EXPO_PUSH_URL, {
       method: "POST",
-      headers,
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify(notifications),
     });
 
@@ -241,7 +235,5 @@ app.post(WEBHOOK_PATH, async (request, response) => {
 });
 
 app.listen(PORT, () => {
-  log.info(`Webhook relay listening on http://localhost:${PORT}`);
-  log.info(`Webhook endpoint: http://localhost:${PORT}${WEBHOOK_PATH}`);
-  log.info(`Health endpoint: http://localhost:${PORT}/health`);
+  log.info(`Webhook relay ready: http://localhost:${PORT}${WEBHOOK_PATH}`);
 });
