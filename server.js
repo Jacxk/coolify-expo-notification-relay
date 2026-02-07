@@ -155,6 +155,14 @@ app.post(WEBHOOK_PATH, async (request, response) => {
   }
 
   const payload = request.body || {};
+  const eventName =
+    payload && typeof payload === "object" && payload.event
+      ? String(payload.event)
+      : "unknown_event";
+
+  log.info("Received Coolify webhook event", { event: eventName });
+  log.debug("Webhook payload received", payload);
+
   const notificationTitle = buildTitle(payload);
   const notificationBody = buildBody(payload);
   const notificationData = buildData(payload);
@@ -166,6 +174,11 @@ app.post(WEBHOOK_PATH, async (request, response) => {
     sound: "default",
     data: notificationData,
   }));
+
+  log.debug("Prepared Expo notifications", {
+    count: notifications.length,
+    title: notificationTitle,
+  });
 
   const headers = {
     "Content-Type": "application/json",
@@ -228,5 +241,7 @@ app.post(WEBHOOK_PATH, async (request, response) => {
 });
 
 app.listen(PORT, () => {
-  log.info(`Webhook relay listening on port ${PORT}`);
+  log.info(`Webhook relay listening on http://localhost:${PORT}`);
+  log.info(`Webhook endpoint: http://localhost:${PORT}${WEBHOOK_PATH}`);
+  log.info(`Health endpoint: http://localhost:${PORT}/health`);
 });
