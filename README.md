@@ -8,13 +8,22 @@ Notifications so your Expo app can show alerts.
 - Accepts Coolify webhook POSTs on a configurable path
 - Optionally checks a shared webhook secret
 - Sends one or more Expo push notifications
-- Exposes a simple health endpoint
+- Optionally relays webhook payloads to additional URLs
+- Exposes a simple `/health` endpoint
 
 ## Requirements
 
 - Node.js 18+
 
 ## Quick start
+
+### Coolify deployment
+
+1. Deploy this repository in Coolify.
+2. Configure the environment variables in the Coolify UI.
+3. Start the service (Coolify will run `npm start`).
+
+### Local development
 
 ```bash
 npm install
@@ -30,12 +39,14 @@ npm start
 | `WEBHOOK_PATH` | No | `/webhook` | Path for incoming webhooks |
 | `WEBHOOK_SECRET` | No | (empty) | Shared secret for webhook auth |
 | `EXPO_PUSH_TOKENS` | Yes | (empty) | Comma-separated Expo push tokens |
-| `EXPO_PUSH_TOKEN` | No | (empty) | Single token alternative |
 | `EXPO_ACCESS_TOKEN` | No | (empty) | Optional Expo access token |
 | `EXPO_TITLE_PREFIX` | No | `Coolify` | Prefix for notification title |
 | `EXPO_BODY_FALLBACK` | No | `Coolify event received` | Fallback body text |
 | `EXPO_PUSH_URL` | No | `https://exp.host/--/api/v2/push/send` | Expo push API URL |
+| `WEBHOOK_RELAY_URLS` | No | (empty) | Comma-separated URLs to relay the webhook payload |
 | `LOG_LEVEL` | No | `info` | `info` or `debug` |
+
+The service exits on startup if `EXPO_PUSH_TOKENS` is not set.
 
 ## Coolify webhook configuration
 
@@ -51,6 +62,12 @@ npm start
 - Body: `message` or `cleanup_message`, otherwise `EXPO_BODY_FALLBACK`
 - Data: the full webhook payload plus some metadata
 
+## Webhook relay URLs
+
+If you want to forward the exact webhook payload to other destinations,
+set `WEBHOOK_RELAY_URLS` to a comma-separated list of URLs. The relay
+POSTs the original JSON body to each URL with `Content-Type: application/json`.
+
 ## Example payloads
 
 ```json
@@ -62,7 +79,7 @@ npm start
   "database_uuid": "i8coskssgsoosgggk80g44sc",
   "database_type": "coolify",
   "frequency": "0 0 * * *",
-  "url": "http://cool.jackscode.me/project//environment//database/i8coskssgsoosgggk80g44sc"
+  "url": "https://app.coolify.io/project//environment//database/i8coskssgsoosgggk80g44sc"
 }
 ```
 
@@ -74,7 +91,7 @@ npm start
   "server_name": "oracle-vps",
   "server_uuid": "cg8g8kkog488cw0o4wgokc0w",
   "cleanup_message": "Forced Docker cleanup job executed successfully. Disk usage before: 8%, Disk usage after: 8%.",
-  "url": "http://cool.jackscode.me/server/cg8g8kkog488cw0o4wgokc0w"
+  "url": "https://app.coolify.io/server/cg8g8kkog488cw0o4wgokc0w"
 }
 ```
 

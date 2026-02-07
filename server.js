@@ -11,8 +11,8 @@ const EXPO_ACCESS_TOKEN = process.env.EXPO_ACCESS_TOKEN || "";
 const EXPO_TITLE_PREFIX = process.env.EXPO_TITLE_PREFIX || "Coolify";
 const EXPO_BODY_FALLBACK =
   process.env.EXPO_BODY_FALLBACK || "Coolify event received";
-const EXPO_PUSH_TOKENS =
-  process.env.EXPO_PUSH_TOKENS || process.env.EXPO_PUSH_TOKEN || "";
+const EXPO_PUSH_TOKENS = process.env.EXPO_PUSH_TOKENS || "";
+const WEBHOOK_RELAY_URLS = process.env.WEBHOOK_RELAY_URLS || "";
 const LOG_LEVEL = process.env.LOG_LEVEL || "info";
 
 const log = {
@@ -33,6 +33,15 @@ const log = {
 const tokens = EXPO_PUSH_TOKENS.split(",")
   .map((token) => token.trim())
   .filter(Boolean);
+const relayUrls = WEBHOOK_RELAY_URLS.split(",")
+  .map((url) => url.trim())
+  .filter(Boolean);
+
+if (!tokens.length) {
+  throw new Error(
+    "EXPO_PUSH_TOKENS is required and must contain at least one token."
+  );
+}
 
 function isAuthorized(request) {
   if (!WEBHOOK_SECRET) {
@@ -92,6 +101,41 @@ function buildData(payload) {
   };
 }
 
+async function relayPayload(payload) {
+  if (!relayUrls.length) {
+    return [];
+  }
+
+  const body = JSON.stringify(payload);
+  const results = await Promise.all(
+    relayUrls.map(async (url) => {
+      try {
+        const relayResponse = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body,
+        });
+
+        return {
+          url,
+          ok: relayResponse.ok,
+          status: relayResponse.status,
+        };
+      } catch (error) {
+        return {
+          url,
+          ok: false,
+          error: error instanceof Error ? error.message : "Unknown error",
+        };
+      }
+    })
+  );
+
+  return results;
+}
+
 app.use(express.json({ limit: "1mb" }));
 
 app.get("/", (request, response) => {
@@ -101,20 +145,13 @@ app.get("/", (request, response) => {
   });
 });
 
-app.get("/healthz", (request, response) => {
+app.get("/health", (request, response) => {
   response.status(200).json({ ok: true });
 });
 
 app.post(WEBHOOK_PATH, async (request, response) => {
   if (!isAuthorized(request)) {
     return response.status(401).json({ ok: false, error: "Unauthorized" });
-  }
-
-  if (!tokens.length) {
-    return response.status(500).json({
-      ok: false,
-      error: "EXPO_PUSH_TOKEN(S) not configured",
-    });
   }
 
   const payload = request.body || {};
@@ -137,6 +174,8 @@ app.post(WEBHOOK_PATH, async (request, response) => {
     headers.Authorization = `Bearer ${EXPO_ACCESS_TOKEN}`;
   }
 
+  const relayPromise = relayPayload(payload);
+
   try {
     const expoResponse = await fetch(EXPO_PUSH_URL, {
       method: "POST",
@@ -145,6 +184,12 @@ app.post(WEBHOOK_PATH, async (request, response) => {
     });
 
     const expoBody = await expoResponse.json().catch(() => null);
+
+    const relayResults = await relayPromise;
+    const failedRelays = relayResults.filter((relay) => !relay.ok);
+    if (failedRelays.length) {
+      log.warn("Relay webhook(s) failed", failedRelays);
+    }
 
     if (!expoResponse.ok) {
       log.error("Expo push failed", {
@@ -156,6 +201,7 @@ app.post(WEBHOOK_PATH, async (request, response) => {
         error: "Expo push failed",
         status: expoResponse.status,
         expo: expoBody,
+        relays: relayResults,
       });
     }
 
@@ -163,12 +209,20 @@ app.post(WEBHOOK_PATH, async (request, response) => {
     return response.status(200).json({
       ok: true,
       expo: expoBody,
+      relays: relayResults,
     });
   } catch (error) {
+    const relayResults = await relayPromise;
+    const failedRelays = relayResults.filter((relay) => !relay.ok);
+    if (failedRelays.length) {
+      log.warn("Relay webhook(s) failed", failedRelays);
+    }
+
     log.error("Failed to send Expo notification", error);
     return response.status(500).json({
       ok: false,
       error: "Failed to send Expo notification",
+      relays: relayResults,
     });
   }
 });
