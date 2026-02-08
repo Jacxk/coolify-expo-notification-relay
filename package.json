@@ -1,6 +1,6 @@
 {
   "name": "coolify-expo-notification-relay",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Webhook relay to send Coolify events to Expo push notifications.",
   "main": "server.js",
   "scripts": {

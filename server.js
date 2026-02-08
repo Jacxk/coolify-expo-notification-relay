@@ -71,6 +71,7 @@ async function relayPayload(payload) {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            "User-Agent": "Coolify Expo Notification Relay",
           },
           body,
         });
@@ -90,19 +91,24 @@ async function relayPayload(payload) {
     }),
   );
 
+  const failedRelays = results.filter((relay) => !relay.ok);
+  if (failedRelays.length > 0) {
+    log.warn("Relay webhook(s) failed", failedRelays);
+  }
+
   return results;
 }
 
 app.use(express.json({ limit: "1mb" }));
 
-app.get("/", (request, response) => {
+app.get("/", (_, response) => {
   response.status(200).json({
     ok: true,
     service: "coolify-expo-webhook-relay",
   });
 });
 
-app.get("/health", (request, response) => {
+app.get("/health", (_, response) => {
   response.status(200).json({ ok: true });
 });
 
@@ -138,7 +144,7 @@ app.post(WEBHOOK_PATH, async (request, response) => {
     notification,
   });
 
-  const relayPromise = relayPayload(payload);
+  relayPayload(payload);
 
   try {
     const expoResponse = await fetch(EXPO_PUSH_URL, {
@@ -151,12 +157,6 @@ app.post(WEBHOOK_PATH, async (request, response) => {
 
     const expoBody = await expoResponse.json().catch(() => null);
 
-    const relayResults = await relayPromise;
-    const failedRelays = relayResults.filter((relay) => !relay.ok);
-    if (failedRelays.length) {
-      log.warn("Relay webhook(s) failed", failedRelays);
-    }
-
     if (!expoResponse.ok) {
       log.error("Expo push failed", {
         status: expoResponse.status,
@@ -167,7 +167,6 @@ app.post(WEBHOOK_PATH, async (request, response) => {
         error: "Expo push failed",
         status: expoResponse.status,
         expo: expoBody,
-        relays: relayResults,
       });
     }
 
@@ -175,20 +174,12 @@ app.post(WEBHOOK_PATH, async (request, response) => {
     return response.status(200).json({
       ok: true,
       expo: expoBody,
-      relays: relayResults,
     });
   } catch (error) {
-    const relayResults = await relayPromise;
-    const failedRelays = relayResults.filter((relay) => !relay.ok);
-    if (failedRelays.length) {
-      log.warn("Relay webhook(s) failed", failedRelays);
-    }
-
     log.error("Failed to send Expo notification", error);
     return response.status(500).json({
       ok: false,
       error: "Failed to send Expo notification",
-      relays: relayResults,
     });
   }
 });
