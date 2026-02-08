@@ -1,50 +1,60 @@
+// ---------------------------------------------------------------------------
+// Event groups: event name -> handler. Add new events in the appropriate group.
+// ---------------------------------------------------------------------------
+
+const EVENT_GROUPS = {
+  docker: {
+    docker_cleanup_success: dockerCleanupSuccessEvent,
+    docker_cleanup_failed: dockerCleanupFailedEvent,
+  },
+  database: {
+    database_backup_success: databaseBackupSuccessEvent,
+    database_backup_failed: databaseBackupFailedEvent,
+    backup_success_with_s3_warning: backupSuccessWithS3WarningEvent,
+  },
+  server: {
+    server_patches_available: serverPatchesAvailableEvent,
+    server_patch_check: serverPatchCheckEvent,
+    server_reachable: serverReachableEvent,
+    server_unreachable: serverUnreachableEvent,
+    high_disk_usage: highDiskUsageEvent,
+  },
+  deployment: {
+    deployment_success: deploymentSuccessEvent,
+    deployment_failed: deploymentFailedEvent,
+  },
+  container: {
+    container_stopped: containerStoppedEvent,
+    container_restarted: containerRestartedEvent,
+    status_changed: statusChangedEvent,
+  },
+  traefik: {
+    traefik_version_outdated: traefikVersionOutdatedEvent,
+  },
+  task: {
+    task_success: taskSuccessEvent,
+    task_failed: taskFailedEvent,
+  },
+  test: {
+    test: testEvent,
+  },
+};
+
+const EVENT_HANDLERS = Object.values(EVENT_GROUPS).reduce(
+  (acc, group) => ({ ...acc, ...group }),
+  {}
+);
+
 function eventParser(payload) {
   const event = payload.event;
-  switch (event) {
-    case "docker_cleanup_success":
-      return dockerCleanupSuccessEvent(payload);
-    case "docker_cleanup_failed":
-      return dockerCleanupFailedEvent(payload);
-    case "database_backup_success":
-      return databaseBackupSuccessEvent(payload);
-    case "database_backup_failed":
-      return databaseBackupFailedEvent(payload);
-    case "server_patches_available":
-      return serverPatchesAvailableEvent(payload);
-    case "server_patch_check":
-      return serverPatchCheckEvent(payload);
-    case "server_reachable":
-      return serverReachableEvent(payload);
-    case "server_unreachable":
-      return serverUnreachableEvent(payload);
-    case "high_disk_usage":
-      return highDiskUsageEvent(payload);
-    case "deployment_success":
-      return deploymentSuccessEvent(payload);
-    case "deployment_failed":
-      return deploymentFailedEvent(payload);
-    case "container_stopped":
-      return containerStoppedEvent(payload);
-    case "container_restarted":
-      return containerRestartedEvent(payload);
-    case "status_changed":
-      return statusChangedEvent(payload);
-    case "traefik_version_outdated":
-      return traefikVersionOutdatedEvent(payload);
-    case "task_success":
-      return taskSuccessEvent(payload);
-    case "task_failed":
-      return taskFailedEvent(payload);
-    case "backup_success_with_s3_warning":
-      return backupSuccessWithS3WarningEvent(payload);
-    case "test":
-      return testEvent();
-    default:
-      return {
-        title: "Event: " + event,
-        body: payload.message,
-      };
+  const handler = EVENT_HANDLERS[event];
+  if (handler) {
+    return handler(payload);
   }
+  return {
+    title: "Event: " + event,
+    body: payload.message,
+  };
 }
 
 function dockerCleanupSuccessEvent(payload) {
