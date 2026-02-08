@@ -36,7 +36,7 @@ const relayUrls = WEBHOOK_RELAY_URLS.split(",")
   .map((url) => url.trim())
   .filter(Boolean);
 
-if (!tokens.length) {
+if (tokens.length === 0) {
   throw new Error(
     "EXPO_PUSH_TOKENS is required and must contain at least one token.",
   );
@@ -60,48 +60,8 @@ function isAuthorized(request) {
   return false;
 }
 
-function buildTitle(payload) {
-  const event =
-    payload && typeof payload === "object" && payload.event
-      ? String(payload.event)
-      : "";
-  if (event) {
-    return `${EXPO_TITLE_PREFIX}: ${event}`;
-  }
-  return EXPO_TITLE_PREFIX;
-}
-
-function buildBody(payload) {
-  if (payload && typeof payload === "object") {
-    if (payload.message) {
-      return String(payload.message);
-    }
-    if (payload.cleanup_message) {
-      return String(payload.cleanup_message);
-    }
-  }
-  return EXPO_BODY_FALLBACK;
-}
-
-function buildData(payload) {
-  const event =
-    payload && typeof payload === "object" ? payload.event : undefined;
-  const success =
-    payload && typeof payload === "object" ? payload.success : undefined;
-  const url = payload && typeof payload === "object" ? payload.url : undefined;
-
-  return {
-    source: "coolify",
-    event,
-    success,
-    url,
-    payload,
-    receivedAt: new Date().toISOString(),
-  };
-}
-
 async function relayPayload(payload) {
-  if (!relayUrls.length) {
+  if (relayUrls.length === 0) {
     return [];
   }
 
@@ -162,21 +122,22 @@ app.post(WEBHOOK_PATH, async (request, response) => {
   log.info("Received Coolify webhook event", { event: eventName });
   log.debug("Webhook payload received", payload);
 
-  const notificationTitle = buildTitle(payload);
-  const notificationBody = buildBody(payload);
-  const notificationData = buildData(payload);
+  const notification = eventParser(payload);
 
   const notifications = tokens.map((token) => ({
+    ...notification,
     to: token,
-    title: notificationTitle,
-    body: notificationBody,
     sound: "default",
-    data: notificationData,
+    data: {
+      source: "coolify",
+      receivedAt: new Date().toISOString(),
+      payload,
+    },
   }));
 
   log.debug("Prepared Expo notifications", {
     count: notifications.length,
-    title: notificationTitle,
+    notification,
   });
 
   const relayPromise = relayPayload(payload);
