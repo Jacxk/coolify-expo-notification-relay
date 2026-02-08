@@ -8,9 +8,6 @@ const WEBHOOK_PATH = process.env.WEBHOOK_PATH || "/webhook";
 const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET || "";
 const EXPO_PUSH_URL =
   process.env.EXPO_PUSH_URL || "https://exp.host/--/api/v2/push/send";
-const EXPO_TITLE_PREFIX = process.env.EXPO_TITLE_PREFIX || "Coolify";
-const EXPO_BODY_FALLBACK =
-  process.env.EXPO_BODY_FALLBACK || "Coolify event received";
 const EXPO_PUSH_TOKENS = process.env.EXPO_PUSH_TOKENS || "";
 const WEBHOOK_RELAY_URLS = process.env.WEBHOOK_RELAY_URLS || "";
 const LOG_LEVEL = process.env.LOG_LEVEL || "info";

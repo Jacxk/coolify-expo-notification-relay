@@ -19,9 +19,11 @@ Notifications so your Expo app can show alerts.
 
 ### Coolify deployment
 
-1. Deploy this repository in Coolify.
-2. Configure the environment variables in the Coolify UI.
-3. Start the service (Coolify will run `npm start`).
+1. Create a new git based resource using public repository.
+2. Paste the repository URL and click continue.
+3. Configure the environment variables in the resource settings.
+   - `EXPO_PUSH_TOKENS` - Required
+4. Save and deploy.
 
 ### Local development
 
@@ -33,18 +35,16 @@ npm start
 
 ## Environment variables
 
-| Variable | Required | Default | Description |
-| --- | --- | --- | --- |
-| `PORT` | No | `3000` | Port to listen on |
-| `WEBHOOK_PATH` | No | `/webhook` | Path for incoming webhooks |
-| `WEBHOOK_SECRET` | No | (empty) | Shared secret for webhook auth |
-| `EXPO_PUSH_TOKENS` | Yes | (empty) | Comma-separated Expo push tokens |
-| `EXPO_ACCESS_TOKEN` | No | (empty) | Optional Expo access token |
-| `EXPO_TITLE_PREFIX` | No | `Coolify` | Prefix for notification title |
-| `EXPO_BODY_FALLBACK` | No | `Coolify event received` | Fallback body text |
-| `EXPO_PUSH_URL` | No | `https://exp.host/--/api/v2/push/send` | Expo push API URL |
-| `WEBHOOK_RELAY_URLS` | No | (empty) | Comma-separated URLs to relay the webhook payload |
-| `LOG_LEVEL` | No | `info` | `info` or `debug` |
+| Variable             | Required | Default                                | Description                                       |
+| -------------------- | -------- | -------------------------------------- | ------------------------------------------------- |
+| `PORT`               | No       | `3000`                                 | Port to listen on                                 |
+| `WEBHOOK_PATH`       | No       | `/webhook`                             | Path for incoming webhooks                        |
+| `WEBHOOK_SECRET`     | No       | (empty)                                | Shared secret for webhook auth                    |
+| `EXPO_PUSH_TOKENS`   | Yes      | (empty)                                | Comma-separated Expo push tokens                  |
+| `EXPO_ACCESS_TOKEN`  | No       | (empty)                                | Optional Expo access token                        |
+| `EXPO_PUSH_URL`      | No       | `https://exp.host/--/api/v2/push/send` | Expo push API URL                                 |
+| `WEBHOOK_RELAY_URLS` | No       | (empty)                                | Comma-separated URLs to relay the webhook payload |
+| `LOG_LEVEL`          | No       | `info`                                 | `info` or `debug`                                 |
 
 The service exits on startup if `EXPO_PUSH_TOKENS` is not set.
 
@@ -55,12 +55,6 @@ The service exits on startup if `EXPO_PUSH_TOKENS` is not set.
 2. If you set `WEBHOOK_SECRET`, add a header:
    - `x-webhook-secret: <YOUR_SECRET>`
    - or `Authorization: Bearer <YOUR_SECRET>`
-
-## Notification mapping
-
-- Title: `EXPO_TITLE_PREFIX: <event>` when `event` is present
-- Body: `message` or `cleanup_message`, otherwise `EXPO_BODY_FALLBACK`
-- Data: the full webhook payload plus some metadata
 
 ## Webhook relay URLs
 
@@ -95,10 +89,10 @@ POSTs the original JSON body to each URL with `Content-Type: application/json`.
 }
 ```
 
-## Local test
+## Test the relay
 
 ```bash
-curl -X POST "http://localhost:3000/webhook" \
+curl -X POST "https://your-relay.example.com/webhook" \
   -H "Content-Type: application/json" \
-  -d '{"event":"backup_success","message":"Database backup successful","success":true}'
+  -d '{"event":"backup_success","database_name":"coolify-db"}'
 ```
