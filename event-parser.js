@@ -8,13 +8,14 @@ const EVENT_GROUPS = {
     docker_cleanup_failed: dockerCleanupFailedEvent,
   },
   database: {
-    database_backup_success: databaseBackupSuccessEvent,
-    database_backup_failed: databaseBackupFailedEvent,
+    backup_success: backupSuccessEvent,
+    backup_failed: backupFailedEvent,
     backup_success_with_s3_warning: backupSuccessWithS3WarningEvent,
   },
   server: {
     server_patches_available: serverPatchesAvailableEvent,
     server_patch_check: serverPatchCheckEvent,
+    server_patch_check_error: serverPatchCheckErrorEvent,
     server_reachable: serverReachableEvent,
     server_unreachable: serverUnreachableEvent,
     high_disk_usage: highDiskUsageEvent,
@@ -71,14 +72,14 @@ function dockerCleanupFailedEvent(payload) {
   };
 }
 
-function databaseBackupSuccessEvent(payload) {
+function backupSuccessEvent(payload) {
   return {
     title: "Database Backup Success",
     body: `Database backup job succeeded on database ${payload.database_name}`,
   };
 }
 
-function databaseBackupFailedEvent(payload) {
+function backupFailedEvent(payload) {
   return {
     title: "Database Backup Failed",
     body: `Database backup job failed on database ${payload.database_name}`,
@@ -96,6 +97,13 @@ function serverPatchCheckEvent(payload) {
   return {
     title: "Server Patches Available",
     body: `${payload.total_updates} patches are available for server ${payload.server_name}`,
+  };
+}
+
+function serverPatchCheckErrorEvent(payload) {
+  return {
+    title: "Failed to Check for Patches",
+    body: `Failed to check for patches on server ${payload.server_name}`,
   };
 }
 
@@ -205,3 +213,5 @@ function testEvent() {
     body: "Test event received",
   };
 }
+
+module.exports = eventParser;
