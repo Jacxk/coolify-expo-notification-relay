@@ -171,6 +171,7 @@ dependencies = [
  "axum",
  "regex",
  "reqwest",
+ "serde",
  "serde_json",
  "tokio",
  "tower",

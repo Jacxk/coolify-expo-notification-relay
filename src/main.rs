@@ -1,4 +1,5 @@
 mod endpoints;
+mod event_parser;
 mod utils;
 
 use crate::endpoints::health_check;
