@@ -2,6 +2,16 @@
 
 This is a simple rust server that relays webhook payloads to the Expo push notification service.
 
+## Environment variables
+
+| Name                 | Required | Default                                | Description                                                                                  |
+| -------------------- | -------- | -------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `EXPO_PUSH_TOKENS`   | Yes      | —                                      | Comma-separated Expo push tokens (e.g. `ExponentPushToken[xxx]`) that receive notifications. |
+| `EXPO_PUSH_URL`      | No       | `https://exp.host/--/api/v2/push/send` | Expo push API URL.                                                                           |
+| `PORT`               | No       | `3000`                                 | Port the server listens on.                                                                  |
+| `WEBHOOK_PATH`       | No       | `/`                                    | URL path for the webhook endpoint.                                                           |
+| `WEBHOOK_RELAY_URLS` | No       | —                                      | Comma-separated URLs to forward the raw webhook payload to (optional relay).                 |
+
 ## Build
 
 1. **Build the release binary** 
