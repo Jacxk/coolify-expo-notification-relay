@@ -1,3 +1,6 @@
-pub async fn health_check() -> &'static str {
-    "OK"
+use axum::response::IntoResponse;
+use reqwest::StatusCode;
+
+pub async fn health_check() -> impl IntoResponse {
+    (StatusCode::OK, "OK").into_response()
 }

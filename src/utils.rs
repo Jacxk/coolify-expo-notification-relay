@@ -2,47 +2,37 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::{env, time::{Duration, SystemTime}};
 
-pub fn parse_expo_push_tokens() -> Vec<String> {
+pub fn parse_expo_push_tokens() -> Result<Vec<String>, String> {
     let expo_push_tokens = env::var("EXPO_PUSH_TOKENS");
 
-    if expo_push_tokens.is_err() {
-        eprintln!("Environment variable EXPO_PUSH_TOKENS is not set.");
-        eprintln!("Please set the environment variable and try again.");
-        eprintln!("-------------------------------------------------");
-        eprintln!("Example: EXPO_PUSH_TOKENS='ExponentPushToken[1234567890]'");
-        eprintln!(
-            "For multiple tokens, use a comma-separated list: EXPO_PUSH_TOKENS='ExponentPushToken[1234567890],ExponentPushToken[1234567891]'"
-        );
-        eprintln!();
-        eprintln!("You can find your Expo push tokens in the app settings.");
-        eprintln!("-------------------------------------------------");
-        std::process::exit(1);
-    }
+    let Ok(expo_push_tokens) = &expo_push_tokens else {
+        return Err("NOT_SET".to_string());
+    };
 
-    let tokens: Vec<String> = expo_push_tokens
-        .unwrap()
-        .split(',')
-        .map(|token| token.to_string())
-        .collect();
-    let re = Regex::new(r"ExponentPushToken\[(?<token>[^\]]+)\]").unwrap();
     let mut valid_tokens = Vec::new();
+    let tokens = &expo_push_tokens.split(',').map(str::to_string).collect::<Vec<String>>();
+    let re = Regex::new(r"ExponentPushToken\[(?<token>[^\]]+)\]");
+
+    let Ok(re) = &re else {
+        return Err("Failed to create regex.".to_string());
+    };
 
     for token in tokens {
-        if !re.is_match(token.as_str()) {
+        if !&re.is_match(&token.as_str()) {
             eprintln!("Invalid Expo push token: {}", token);
             eprintln!("Please use the correct format: ExponentPushToken[1234567890]");
             continue;
         }
 
-        valid_tokens.push(token);
+        valid_tokens.push(token.to_string());
     }
 
     if valid_tokens.is_empty() {
         eprintln!("No valid Expo push tokens found.");
-        std::process::exit(1);
+        return Err("No valid Expo push tokens found.".to_string());
     }
 
-    valid_tokens
+    Ok(valid_tokens)
 }
 
 #[derive(Debug, Serialize)]
@@ -68,16 +58,27 @@ pub fn send_expo_notification(expo_notifications: Vec<ExpoNotification>) {
     let expo_push_url = env::var("EXPO_PUSH_URL")
         .unwrap_or_else(|_| "https://exp.host/--/api/v2/push/send".to_string());
     
+    let client = reqwest::Client::new();
+
     tokio::spawn(async move {
-        let client = reqwest::Client::new();
-        let res = client
-            .post(expo_push_url)
-            .header("Content-Type", "application/json")
-            .body(serde_json::to_string(&expo_notifications).unwrap())
-            .send()
-            .await
-            .unwrap();
-        println!("Expo response: {:?}", res.text().await.unwrap());
+        let json_body = serde_json::to_string(&expo_notifications);
+
+        match json_body {
+            Ok(body) => {
+                let res = client
+                    .post(&expo_push_url)
+                    .header("Content-Type", "application/json")
+                    .body(body)
+                    .send()
+                    .await;
+
+                match res {
+                    Ok(response) => println!("Expo response: {:?}", response.text().await.unwrap()),
+                    Err(e) => eprintln!("Failed to send Expo notification: {:?}", e),
+                }
+            }
+            Err(e) => eprintln!("Failed to serialize Expo notification: {:?}", e),
+        }
     });
 }
 
@@ -106,8 +107,8 @@ pub fn check_for_updates(expo_push_tokens: Vec<String>) {
 
     unsafe { LAST_CHECK_TIME = Some(SystemTime::now()); }
 
+    let client = reqwest::Client::new();
     tokio::spawn(async move {
-        let client = reqwest::Client::new();
         if let Ok(res) = client
             .get("https://api.github.com/repos/jacxk/coolify-expo-notification-relay/releases/latest")
             .header("User-Agent", format!("{} v{}", PACKAGE_NAME, VERSION))
