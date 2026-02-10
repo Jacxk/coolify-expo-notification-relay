@@ -1,47 +1,42 @@
 use std::env;
 
 use axum::Json;
-use serde_json::json;
 
-use crate::event_parser;
+use crate::utils::ExpoNotification;
+use crate::{
+    event_parser,
+    utils::{check_for_updates, send_expo_notification},
+};
 
 pub async fn webhook_catch(
     payload: Json<serde_json::Value>,
     expo_push_tokens: Vec<String>,
-    expo_push_url: String,
 ) -> &'static str {
+    relay_payload(payload.clone());
+    check_for_updates(expo_push_tokens.clone());
+
     let data = payload.0.clone();
     let serialized_data = serde_json::from_value(data.clone()).unwrap();
     let notification = event_parser::parse_event(&serialized_data);
     let expo_notifications = expo_push_tokens
         .iter()
         .map(|token| {
-            json!({
-                "to": token,
-                "title": notification.title.clone(),
-                "body": notification.body.clone(),
-                "data": &data
-            })
+            ExpoNotification::new(
+                token.clone(),
+                notification.title.to_string(),
+                notification.body.to_string(),
+                data.clone(),
+            )
         })
-        .collect::<Vec<serde_json::Value>>();
+        .collect::<Vec<ExpoNotification>>();
 
     println!(
         "Webhook Event Received: {:?}",
         serialized_data.event.as_deref().unwrap_or("unknown event")
     );
 
-    relay_payload(payload);
+    send_expo_notification(expo_notifications);
 
-    let client = reqwest::Client::new();
-    let res = client
-        .post(expo_push_url)
-        .header("Content-Type", "application/json")
-        .body(serde_json::to_string(&expo_notifications).unwrap())
-        .send()
-        .await
-        .unwrap();
-
-    println!("Expo response: {:?}", res.text().await.unwrap());
     "OK"
 }
 
