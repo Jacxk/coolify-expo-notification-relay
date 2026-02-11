@@ -1,6 +1,6 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Default, Deserialize)]
+#[derive(Deserialize, Serialize, Debug, Clone, Default)]
 pub struct WebhookPayload {
     pub title: Option<String>,
     pub event: Option<String>,
@@ -20,7 +20,7 @@ pub struct WebhookPayload {
 }
 
 /// Parsed notification to send to Expo (title + body).
-#[derive(Debug, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Notification {
     pub title: String,
     pub body: String,
