@@ -37,8 +37,10 @@ async fn main() {
     let expo_push_url = env::var("EXPO_PUSH_URL")
         .unwrap_or_else(|_| "https://exp.host/--/api/v2/push/send".to_string());
 
+    let http_client = reqwest::Client::new();
+
     let state = Arc::new(AppState {
-        expo: ExpoService::new(expo_push_tokens.clone(), expo_push_url),
+        expo: ExpoService::new(expo_push_tokens.clone(), expo_push_url, http_client.clone()),
         repeater: WebhookRepeaterService {
             urls: env::var("WEBHOOK_RELAY_URLS")
                 .unwrap_or("".to_string())
@@ -46,13 +48,15 @@ async fn main() {
                 .map(|url| url.trim().to_string())
                 .filter(|url| !url.is_empty())
                 .collect::<Vec<String>>(),
+            client: http_client.clone(),
         },
         expo_push_tokens,
+        http_client: http_client.clone(),
     });
 
     let state_clone = state.clone();
     tokio::spawn(async move {
-        let mut updater = UpdaterService::default();
+        let mut updater = UpdaterService::with_client(state_clone.http_client.clone());
         if let Ok(Some(release)) = updater.check_for_updates().await {
             println!("-------------------------------------------------");
             println!("Latest version: {}", release.tag_name);

@@ -28,11 +28,11 @@ impl ExpoNotification {
 }
 
 impl ExpoService {
-    pub fn new(expo_push_tokens: Vec<String>, expo_push_url: String) -> Self {
+    pub fn new(expo_push_tokens: Vec<String>, expo_push_url: String, client: reqwest::Client) -> Self {
         Self {
             expo_push_tokens,
             expo_push_url,
-            client: reqwest::Client::new(),
+            client,
         }
     }
 

@@ -4,4 +4,5 @@ pub struct AppState {
     pub expo: ExpoService,
     pub repeater: WebhookRepeaterService,
     pub expo_push_tokens: Vec<String>,
+    pub http_client: reqwest::Client,
 }

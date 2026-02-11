@@ -13,6 +13,7 @@ pub struct UpdaterService {
     pub last_check_time: Option<SystemTime>,
     pub check_for_updates_interval: u64,
     pub update_check_url: &'static str,
+    client: reqwest::Client,
 }
 
 #[derive(Deserialize, Clone)]
@@ -39,11 +40,19 @@ impl Default for UpdaterService {
             notification_sent: false,
             last_check_time: None,
             check_for_updates_interval: 86400,
+            client: reqwest::Client::new(),
         }
     }
 }
 
 impl UpdaterService {
+    pub fn with_client(client: reqwest::Client) -> Self {
+        Self {
+            client,
+            ..Default::default()
+        }
+    }
+
     pub async fn check_for_updates(&mut self) -> Result<Option<Release>, UpdaterError> {
         if let Some(last_check_time) = self.last_check_time {
             if let Ok(elapsed) = last_check_time.elapsed() {
@@ -57,9 +66,7 @@ impl UpdaterService {
             }
         }
 
-        let client = reqwest::Client::new();
-
-        let Ok(res) = client
+        let Ok(res) = self.client
             .get(self.update_check_url)
             .header(
                 "User-Agent",
