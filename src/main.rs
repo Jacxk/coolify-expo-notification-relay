@@ -1,20 +1,14 @@
-mod services;
-mod state;
-
-use coolify_expo_notification_relay::utils::parse_expo_push_tokens;
-
 use axum::{
     Router,
     routing::{get, post},
 };
+use coolify_expo_notification_relay::{
+    ExpoService, UpdaterService, WebhookRepeaterService, services, state::AppState,
+    utils::parse_expo_push_tokens,
+};
 use reqwest::StatusCode;
 use std::env;
 use std::sync::Arc;
-
-use crate::services::{
-    expo::ExpoService, repeater::WebhookRepeaterService, updater::UpdaterService,
-};
-use crate::state::AppState;
 
 #[tokio::main]
 async fn main() {

@@ -1,4 +1,5 @@
-use coolify_expo_notification_relay::event_parser::WebhookPayload;
+use crate::WebhookPayload;
+
 
 pub struct WebhookRepeaterService {
     pub urls: Vec<String>,

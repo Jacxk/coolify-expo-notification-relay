@@ -21,6 +21,7 @@ pub struct Release {
     pub html_url: String,
 }
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub struct UpdaterError {
     pub message: &'static str,

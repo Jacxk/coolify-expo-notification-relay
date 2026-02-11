@@ -3,11 +3,11 @@ pub mod repeater;
 pub mod updater;
 
 use axum::{Json, extract::State, response::IntoResponse};
-use coolify_expo_notification_relay::event_parser::{self, WebhookPayload};
+
 use reqwest::StatusCode;
 use std::sync::Arc;
 
-use crate::{services::expo::ExpoNotification, state::AppState};
+use crate::{event_parser::{self}, services::expo::ExpoNotification, state::AppState, WebhookPayload};
 
 pub async fn handle_webhook(
     State(state): State<Arc<AppState>>,

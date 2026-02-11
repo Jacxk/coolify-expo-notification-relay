@@ -1,30 +1,4 @@
-use serde::{Deserialize, Serialize};
-
-#[derive(Deserialize, Serialize, Debug, Clone, Default)]
-pub struct WebhookPayload {
-    pub title: Option<String>,
-    pub event: Option<String>,
-    pub message: Option<String>,
-
-    pub server_name: Option<String>,
-    pub database_name: Option<String>,
-    pub total_updates: Option<u64>,
-    pub disk_usage: Option<f64>,
-    pub threshold: Option<f64>,
-    pub preview_fqdn: Option<String>,
-    pub application_name: Option<String>,
-    pub project: Option<String>,
-    pub container_name: Option<String>,
-    pub affected_servers_count: Option<u64>,
-    pub task_name: Option<String>,
-}
-
-/// Parsed notification to send to Expo (title + body).
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct Notification {
-    pub title: String,
-    pub body: String,
-}
+use crate::{Notification, WebhookPayload};
 
 pub fn parse_event(payload: &WebhookPayload) -> Notification {
     let event = payload.event.as_deref().unwrap_or("unknown");
