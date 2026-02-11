@@ -1,7 +1,6 @@
 use std::time::{Duration, SystemTime};
 
-use coolify_expo_notification_relay::event_parser::WebhookPayload;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::services::expo::{ExpoNotification, ExpoService};
 
@@ -16,7 +15,7 @@ pub struct UpdaterService {
     client: reqwest::Client,
 }
 
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Serialize, Clone)]
 pub struct Release {
     pub tag_name: String,
     pub html_url: String,
@@ -66,7 +65,8 @@ impl UpdaterService {
             }
         }
 
-        let Ok(res) = self.client
+        let Ok(res) = self
+            .client
             .get(self.update_check_url)
             .header(
                 "User-Agent",
@@ -104,15 +104,18 @@ impl UpdaterService {
     }
 
     pub async fn send_notification_to_device(&mut self, expo: &ExpoService) {
+        let Some(release) = &self.release else {
+            eprintln!("No release data was found.");
+            return;
+        };
+
         let notification = ExpoNotification {
             title: "Update Available".to_string(),
             body: format!(
                 "A new version of the {} is available. Current version: v{}, latest version: {}",
-                PACKAGE_NAME,
-                self.current_version,
-                self.release.as_ref().unwrap().tag_name
+                PACKAGE_NAME, self.current_version, release.tag_name
             ),
-            data: WebhookPayload::default(),
+            data: release,
         };
         expo.send_notification(notification).await;
         self.notification_sent = true;

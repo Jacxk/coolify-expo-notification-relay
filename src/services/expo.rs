@@ -1,12 +1,11 @@
-use coolify_expo_notification_relay::event_parser::WebhookPayload;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use serde_json::{Error, json};
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct ExpoNotification {
+#[derive(Debug)]
+pub struct ExpoNotification<T> {
     pub title: String,
     pub body: String,
-    pub data: WebhookPayload,
+    pub data: T,
 }
 
 pub struct ExpoService {
@@ -15,7 +14,7 @@ pub struct ExpoService {
     client: reqwest::Client,
 }
 
-impl ExpoNotification {
+impl<T: Serialize> ExpoNotification<T> {
     pub fn to_json_with_token(&self, token: &str) -> Result<String, Error> {
         let payload = json!({
             "to": token,
@@ -36,7 +35,7 @@ impl ExpoService {
         }
     }
 
-    pub async fn send_notification(&self, notification: ExpoNotification) {
+    pub async fn send_notification<T: Serialize>(&self, notification: ExpoNotification<T>) {
         for token in self.expo_push_tokens.iter() {
             let Ok(body) = notification.to_json_with_token(token) else {
                 eprintln!("Failed to serialize notification for token: {:?}", token);

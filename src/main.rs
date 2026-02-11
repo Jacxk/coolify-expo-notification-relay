@@ -40,7 +40,7 @@ async fn main() {
     let http_client = reqwest::Client::new();
 
     let state = Arc::new(AppState {
-        expo: ExpoService::new(expo_push_tokens.clone(), expo_push_url, http_client.clone()),
+        expo: ExpoService::new(expo_push_tokens, expo_push_url, http_client.clone()),
         repeater: WebhookRepeaterService {
             urls: env::var("WEBHOOK_RELAY_URLS")
                 .unwrap_or("".to_string())
@@ -50,7 +50,6 @@ async fn main() {
                 .collect::<Vec<String>>(),
             client: http_client.clone(),
         },
-        expo_push_tokens,
         http_client: http_client.clone(),
     });
 
