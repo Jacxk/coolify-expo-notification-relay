@@ -28,6 +28,12 @@ pub struct WebhookPayload {
     pub task_name: Option<String>,
 }
 
+impl WebhookPayload {
+    pub fn from_value(value: serde_json::Value) -> Result<Self, serde_json::Error> {
+        serde_json::from_value(value)
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Notification {
     pub title: String,
