@@ -3,7 +3,7 @@ use std::env;
 
 pub fn parse_expo_push_tokens() -> Result<Vec<String>, String> {
     let Ok(expo_push_tokens) = env::var("EXPO_PUSH_TOKENS") else {
-        return Err("NOT_SET".to_string());
+        return Err("EXPO_PUSH_TOKENS is not set.".to_string());
     };
 
     let tokens = expo_push_tokens
@@ -13,7 +13,7 @@ pub fn parse_expo_push_tokens() -> Result<Vec<String>, String> {
     let re = Regex::new(r"ExponentPushToken\[(?<token>[^\]]+)\]");
 
     let Ok(re) = &re else {
-        return Err("Failed to create regex.".to_string());
+        return Err("Failed to create regex for Expo push tokens validation.".to_string());
     };
 
     let valid_tokens = tokens
@@ -23,7 +23,7 @@ pub fn parse_expo_push_tokens() -> Result<Vec<String>, String> {
         .collect::<Vec<String>>();
 
     if valid_tokens.is_empty() {
-        return Err("No valid Expo push tokens found.".to_string());
+        return Err("No valid Expo push tokens found. Please check your EXPO_PUSH_TOKENS environment variable.".to_string());
     }
 
     Ok(valid_tokens)
