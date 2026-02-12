@@ -7,7 +7,12 @@ use axum::{Json, extract::State, response::IntoResponse};
 use reqwest::StatusCode;
 use std::sync::Arc;
 
-use crate::{event_parser::{self}, services::expo::ExpoNotification, state::AppState, WebhookPayload};
+use crate::{
+    WebhookPayload,
+    event_parser::{self},
+    services::expo::ExpoNotification,
+    state::AppState,
+};
 
 pub async fn handle_webhook(
     State(state): State<Arc<AppState>>,
@@ -21,7 +26,7 @@ pub async fn handle_webhook(
     let notification = event_parser::parse_event(&payload);
 
     tokio::spawn(async move {
-        state.repeater.forward(&payload);
+        let _ = state.repeater.forward(&payload);
         state
             .expo
             .send_notification(ExpoNotification {

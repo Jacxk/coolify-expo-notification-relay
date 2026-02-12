@@ -27,7 +27,14 @@ impl<T: Serialize> ExpoNotification<T> {
 }
 
 impl ExpoService {
-    pub fn new(expo_push_tokens: Vec<String>, expo_push_url: String, client: reqwest::Client) -> Self {
+    const PACKAGE_NAME: &str = env!("CARGO_PKG_NAME");
+    const VERSION: &str = env!("CARGO_PKG_VERSION");
+
+    pub fn new(
+        expo_push_tokens: Vec<String>,
+        expo_push_url: String,
+        client: reqwest::Client,
+    ) -> Self {
         Self {
             expo_push_tokens,
             expo_push_url,
@@ -47,6 +54,10 @@ impl ExpoService {
                 .client
                 .post(&self.expo_push_url)
                 .header("Content-Type", "application/json")
+                .header(
+                    "User-Agent",
+                    format!("{} v{}", ExpoService::PACKAGE_NAME, ExpoService::VERSION),
+                )
                 .body(body)
                 .send()
                 .await;

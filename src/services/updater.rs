@@ -104,10 +104,9 @@ impl UpdaterService {
         }
     }
 
-    pub async fn send_notification_to_device(&mut self, expo: &ExpoService) {
+    pub async fn send_notification_to_device(&mut self, expo: &ExpoService) -> Result<(), &str> {
         let Some(release) = &self.release else {
-            eprintln!("No release data was found.");
-            return;
+            return Err("No release data was found.");
         };
 
         let notification = ExpoNotification {
@@ -120,5 +119,6 @@ impl UpdaterService {
         };
         expo.send_notification(notification).await;
         self.notification_sent = true;
+        Ok(())
     }
 }

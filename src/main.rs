@@ -60,7 +60,9 @@ async fn main() {
             println!("If running on coolify, you can redeploy the application.");
             println!("-------------------------------------------------");
 
-            updater.send_notification_to_device(&state_clone.expo).await;
+            if let Err(error) = updater.send_notification_to_device(&state_clone.expo).await {
+                eprintln!("Failed to send notification to device: {}", error);
+            }
         }
     });
 
