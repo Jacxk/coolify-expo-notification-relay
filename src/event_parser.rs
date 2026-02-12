@@ -161,11 +161,11 @@ fn deployment_success(payload: &WebhookPayload) -> Notification {
     } else {
         "Deployment Success"
     };
-    let app = payload.application_name.as_deref().unwrap_or("application");
-    let project = payload.project.as_deref().unwrap_or("project");
+    let app = payload.application_name.as_deref().unwrap_or("unknown");
+    let project = payload.project.as_deref().unwrap_or("unknown");
     Notification {
         title: title.to_string(),
-        body: format!("{} was deployed successfully for {}", app, project),
+        body: format!("{} was deployed successfully for project: {}", app, project),
     }
 }
 
@@ -175,11 +175,11 @@ fn deployment_failed(payload: &WebhookPayload) -> Notification {
     } else {
         "Deployment Failed"
     };
-    let app = payload.application_name.as_deref().unwrap_or("application");
-    let project = payload.project.as_deref().unwrap_or("project");
+    let app = payload.application_name.as_deref().unwrap_or("uknown");
+    let project = payload.project.as_deref().unwrap_or("unknown");
     Notification {
         title: title.to_string(),
-        body: format!("Deployment of {} for {} failed", app, project),
+        body: format!("Deployment of {} for project {} failed", app, project),
     }
 }
 
@@ -188,7 +188,7 @@ fn deployment_failed(payload: &WebhookPayload) -> Notification {
 // ---------------------------------------------------------------------------
 
 fn container_stopped(payload: &WebhookPayload) -> Notification {
-    let container = payload.container_name.as_deref().unwrap_or("resource");
+    let container = payload.container_name.as_deref().unwrap_or("unknown");
     let server = payload.server_name.as_deref().unwrap_or("unknown");
     Notification {
         title: "Resource Stopped Unexpectedly".to_string(),
@@ -200,7 +200,7 @@ fn container_stopped(payload: &WebhookPayload) -> Notification {
 }
 
 fn container_restarted(payload: &WebhookPayload) -> Notification {
-    let container = payload.container_name.as_deref().unwrap_or("resource");
+    let container = payload.container_name.as_deref().unwrap_or("unknown");
     let server = payload.server_name.as_deref().unwrap_or("unknown");
     Notification {
         title: "Resource Restarted Automatically".to_string(),
@@ -218,7 +218,7 @@ fn status_changed(payload: &WebhookPayload) -> Notification {
         .map(|t| t.to_lowercase() == "application stopped")
         .unwrap_or(false)
     {
-        let app = payload.application_name.as_deref().unwrap_or("application");
+        let app = payload.application_name.as_deref().unwrap_or("unknown");
         return Notification {
             title: "Application Stopped".to_string(),
             body: format!("Application {} has been stopped", app),
@@ -251,7 +251,7 @@ fn traefik_version_outdated(payload: &WebhookPayload) -> Notification {
 // ---------------------------------------------------------------------------
 
 fn task_success(payload: &WebhookPayload) -> Notification {
-    let task = payload.task_name.as_deref().unwrap_or("task");
+    let task = payload.task_name.as_deref().unwrap_or("unknown");
     Notification {
         title: "Scheduled Task Success".to_string(),
         body: format!("Scheduled task {} was successful", task),
@@ -259,7 +259,7 @@ fn task_success(payload: &WebhookPayload) -> Notification {
 }
 
 fn task_failed(payload: &WebhookPayload) -> Notification {
-    let task = payload.task_name.as_deref().unwrap_or("task");
+    let task = payload.task_name.as_deref().unwrap_or("unknown");
     Notification {
         title: "Scheduled Task Failed".to_string(),
         body: format!("Scheduled task {} failed", task),
