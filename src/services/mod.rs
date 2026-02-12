@@ -26,7 +26,13 @@ pub async fn handle_webhook(
     let notification = event_parser::parse_event(&payload);
 
     tokio::spawn(async move {
-        let _ = state.repeater.forward(&payload);
+        let result = state.repeater.forward(&payload).await;
+
+        match result {
+            Ok(()) => println!("Forwarded webhook to repeaters"),
+            Err(e) => eprintln!("Failed to forward webhook to repeaters: {}", e),
+        }
+
         state
             .expo
             .send_notification(ExpoNotification {
