@@ -50,19 +50,25 @@ async fn main() {
     let state_clone = state.clone();
     tokio::spawn(async move {
         let mut updater = UpdaterService::with_client(state_clone.http_client.clone());
-        if let Ok(Some(release)) = updater.check_for_updates().await {
-            println!("-------------------------------------------------");
-            println!("Latest version: {}", release.tag_name);
-            println!("Current version: {}", updater.current_version);
-            println!(
-                "If running in docker, you can update by running: docker pull ghcr.io/jacxk/coolify-expo-notification-relay:latest"
-            );
-            println!("If running on coolify, you can redeploy the application.");
-            println!("-------------------------------------------------");
+        let update_result = updater.check_for_updates().await;
 
-            if let Err(error) = updater.send_notification_to_device(&state_clone.expo).await {
-                eprintln!("Failed to send notification to device: {}", error);
+        match update_result {
+            Ok(Some(release)) => {
+                println!("-------------------------------------------------");
+                println!("Latest version: {}", release.tag_name);
+                println!("Current version: {}", updater.current_version);
+                println!(
+                    "If running in docker, you can update by running: docker pull ghcr.io/jacxk/coolify-expo-notification-relay:latest"
+                );
+                println!("If running on coolify, you can redeploy the application.");
+                println!("-------------------------------------------------");
+
+                if let Err(error) = updater.send_notification_to_device(&state_clone.expo).await {
+                    eprintln!("Failed to send notification to device: {}", error);
+                }
             }
+            Err(error) => eprintln!("Failed to check for updates: {}", error),
+            _ => (),
         }
     });
 

@@ -1,4 +1,4 @@
-use std::time::{Duration, SystemTime};
+use std::{fmt::Display, time::{Duration, SystemTime}};
 
 use serde::{Deserialize, Serialize};
 
@@ -25,6 +25,12 @@ pub struct Release {
 #[derive(Debug)]
 pub struct UpdaterError {
     pub message: &'static str,
+}
+
+impl Display for UpdaterError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.message)
+    }
 }
 
 const PACKAGE_NAME: &str = env!("CARGO_PKG_NAME");
