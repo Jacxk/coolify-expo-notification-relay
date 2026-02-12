@@ -48,7 +48,7 @@ impl ExpoService {
                 eprintln!("Failed to serialize notification for token: {:?}", token);
                 continue;
             };
-            println!("Sending Expo notification to {}: {}", token, body);
+            println!("Sending Expo notification: {}", &body);
 
             let res = self
                 .client
