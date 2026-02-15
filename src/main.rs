@@ -1,41 +1,95 @@
-mod endpoints;
-mod event_parser;
-mod utils;
-
-use crate::endpoints::health_check;
-use crate::endpoints::webhook_catch;
-use crate::utils::check_for_updates;
-use crate::utils::parse_expo_push_tokens;
-
 use axum::{
     Router,
     routing::{get, post},
 };
+use coolify_expo_notification_relay::{
+    ExpoService, UpdaterService, WebhookRepeaterService, services, state::AppState,
+    utils::parse_expo_push_tokens,
+};
+use reqwest::StatusCode;
 use std::env;
+use std::sync::Arc;
 
 #[tokio::main]
 async fn main() {
-    let expo_push_tokens = parse_expo_push_tokens();
+    let Ok(expo_push_tokens) = parse_expo_push_tokens() else {
+        eprintln!("Environment variable EXPO_PUSH_TOKENS is not set.");
+        eprintln!("Please set the environment variable and try again.");
+        eprintln!("-------------------------------------------------");
+        eprintln!("Example: EXPO_PUSH_TOKENS='ExponentPushToken[1234567890]'");
+        eprintln!(
+            "For multiple tokens, use a comma-separated list: EXPO_PUSH_TOKENS='ExponentPushToken[1234567890],ExponentPushToken[1234567891]'"
+        );
+        eprintln!();
+        eprintln!("You can find your Expo push tokens in the app settings.");
+        eprintln!("-------------------------------------------------");
+        std::process::exit(1)
+    };
+
     let port = env::var("PORT").unwrap_or_else(|_| "3000".to_string());
     let webhook_path = env::var("WEBHOOK_PATH").unwrap_or_else(|_| "/".to_string());
+    let expo_push_url = env::var("EXPO_PUSH_URL")
+        .unwrap_or_else(|_| "https://exp.host/--/api/v2/push/send".to_string());
 
-    check_for_updates(expo_push_tokens.clone());
+    let http_client = reqwest::Client::new();
+
+    let state = Arc::new(AppState {
+        expo: ExpoService::new(expo_push_tokens, expo_push_url, http_client.clone()),
+        repeater: WebhookRepeaterService {
+            urls: env::var("WEBHOOK_RELAY_URLS")
+                .unwrap_or("".to_string())
+                .split(',')
+                .map(|url| url.trim().to_string())
+                .filter(|url| !url.is_empty())
+                .collect::<Vec<String>>(),
+            client: http_client.clone(),
+        },
+        http_client: http_client.clone(),
+    });
+
+    let state_clone = state.clone();
+    tokio::spawn(async move {
+        let mut updater = UpdaterService::with_client(state_clone.http_client.clone());
+        let update_result = updater.check_for_updates().await;
+
+        match update_result {
+            Ok(Some(release)) => {
+                println!("-------------------------------------------------");
+                println!("Latest version: {}", release.tag_name);
+                println!("Current version: {}", updater.get_current_version());
+                println!(
+                    "If running in docker, you can update by running: docker pull ghcr.io/jacxk/coolify-expo-notification-relay:latest"
+                );
+                println!("If running on coolify, you can redeploy the application.");
+                println!("-------------------------------------------------");
+
+                if let Err(error) = updater.send_notification_to_device(&state_clone.expo).await {
+                    eprintln!("Failed to send notification to device: {}", error);
+                }
+            }
+            Err(error) => eprintln!("Failed to check for updates: {}", error),
+            _ => (),
+        }
+    });
+
     let app = Router::new()
-        .route("/health", get(health_check::health_check))
-        .route(
-            webhook_path.as_str(),
-            post(move |payload| {
-                webhook_catch::webhook_catch(payload, expo_push_tokens)
-            }),
-        );
+        .route("/health", get(|| async { (StatusCode::OK, "OK") }))
+        .route(webhook_path.as_str(), post(services::handle_webhook))
+        .with_state(state);
 
     let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", port))
         .await
-        .unwrap();
+        .unwrap_or_else(|e| {
+            eprintln!("Failed to bind to port {}: {}", port, e);
+            std::process::exit(1);
+        });
 
     println!("Relay server is running");
     println!("Health check: http://localhost:{}/health", port);
     println!("Webhook: http://localhost:{}{}", port, webhook_path);
 
-    axum::serve(listener, app).await.unwrap();
+    axum::serve(listener, app).await.unwrap_or_else(|e| {
+        eprintln!("Failed to serve application: {}", e);
+        std::process::exit(1);
+    });
 }
