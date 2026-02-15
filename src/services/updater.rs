@@ -1,17 +1,20 @@
-use std::{fmt::Display, time::{Duration, SystemTime}};
+use std::{
+    fmt::Display,
+    time::{Duration, SystemTime},
+};
 
 use serde::{Deserialize, Serialize};
 
 use crate::services::expo::{ExpoNotification, ExpoService};
 
 pub struct UpdaterService {
-    pub current_version: &'static str,
     pub release: Option<Release>,
     pub update_available: bool,
     pub notification_sent: bool,
     pub last_check_time: Option<SystemTime>,
     pub check_for_updates_interval: u64,
     pub update_check_url: &'static str,
+    current_version: &'static str,
     client: reqwest::Client,
 }
 
@@ -57,6 +60,14 @@ impl UpdaterService {
             client,
             ..Default::default()
         }
+    }
+
+    pub fn set_current_version(&mut self, version: &'static str) {
+        self.current_version = version.strip_prefix('v').unwrap_or(version)
+    }
+
+    pub fn get_current_version(&self) -> String {
+        format!("v{}", self.current_version)
     }
 
     pub async fn check_for_updates(&mut self) -> Result<Option<Release>, UpdaterError> {

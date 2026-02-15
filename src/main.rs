@@ -56,7 +56,7 @@ async fn main() {
             Ok(Some(release)) => {
                 println!("-------------------------------------------------");
                 println!("Latest version: {}", release.tag_name);
-                println!("Current version: {}", updater.current_version);
+                println!("Current version: {}", updater.get_current_version());
                 println!(
                     "If running in docker, you can update by running: docker pull ghcr.io/jacxk/coolify-expo-notification-relay:latest"
                 );
