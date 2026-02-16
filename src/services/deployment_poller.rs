@@ -17,15 +17,22 @@ pub struct DeploymentPollerService {
     pub api_url: String,
     pub api_token: String,
     pub poll_interval_secs: u64,
+    pub api_endpoint: String,
     client: reqwest::Client,
     deployments: Vec<String>,
 }
 
 impl DeploymentPollerService {
-    pub fn new(api_url: String, api_token: String, poll_interval_secs: u64) -> Self {
+    pub fn new(
+        api_url: String,
+        api_token: String,
+        api_endpoint: String,
+        poll_interval_secs: u64,
+    ) -> Self {
         Self {
             api_url,
             api_token,
+            api_endpoint,
             poll_interval_secs,
             client: reqwest::Client::new(),
             deployments: Vec::new(),
@@ -33,7 +40,13 @@ impl DeploymentPollerService {
     }
 
     fn deployments_url(&self) -> String {
-        format!("{}/api/v1/deployments", self.api_url.trim_end_matches('/'))
+        format!(
+            "{}/{}",
+            self.api_url.trim_end_matches('/'),
+            self.api_endpoint
+                .trim_start_matches('/')
+                .trim_end_matches('/')
+        )
     }
 
     pub async fn check_for_deployments(&self) -> Result<Vec<Deployment>, String> {
@@ -105,15 +118,23 @@ impl DeploymentPollerService {
             .ok()
             .and_then(|value| value.parse::<u64>().ok())
             .unwrap_or(10);
+        let api_endpoint = env::var("COOLIFY_API_ENDPOINT")
+            .ok()
+            .map(|endpoint| endpoint.trim().to_string())
+            .filter(|endpoint| !endpoint.is_empty())
+            .unwrap_or("api/v1/deployments".to_string());
 
-        match (api_url, api_token) {
-            (None, _) => Ok(None),
-            (Some(_), None) => Err(
+        match (api_url, api_token, api_endpoint) {
+            (None, _, _) => Ok(None),
+            (Some(_), None, _) => Err(
                 "Environment variable COOLIFY_API_TOKEN is required when COOLIFY_API_URL is set.",
             ),
-            (Some(api_url), Some(api_token)) => {
-                Ok(Some(Self::new(api_url, api_token, poll_interval_secs)))
-            }
+            (Some(api_url), Some(api_token), api_endpoint) => Ok(Some(Self::new(
+                api_url,
+                api_token,
+                api_endpoint,
+                poll_interval_secs,
+            ))),
         }
     }
 
