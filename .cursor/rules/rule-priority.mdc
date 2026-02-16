@@ -1,0 +1,17 @@
+---
+description: Apply project and language-specific rules before coding
+alwaysApply: true
+---
+
+# Rule Priority
+
+Before making changes, check for applicable project rules and follow the most specific ones first.
+
+- Prioritize file-matched rules (for example, Rust rules on `**/*.rs`) over generic guidance.
+- When multiple rules apply, follow the stricter/more specific rule first, then the general rule.
+- Do not proceed with implementation that conflicts with an applicable rule.
+- If rules are ambiguous or conflict, ask the user which rule should take priority before continuing.
+
+## Current project note
+
+- For Rust files, follow the Rust pattern-consistency rule and preserve existing project patterns.
