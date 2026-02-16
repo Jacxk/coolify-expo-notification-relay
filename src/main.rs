@@ -3,8 +3,8 @@ use axum::{
     routing::{get, post},
 };
 use coolify_expo_notification_relay::{
-    ExpoService, UpdaterService, WebhookRepeaterService, services, state::AppState,
-    utils::parse_expo_push_tokens,
+    DeploymentPollerService, ExpoService, UpdaterService, WebhookRepeaterService, services,
+    state::AppState, utils::parse_expo_push_tokens,
 };
 use reqwest::StatusCode;
 use std::env;
@@ -71,6 +71,11 @@ async fn main() {
             _ => (),
         }
     });
+
+    if let Err(error) = DeploymentPollerService::start_polling(state.clone()) {
+        eprintln!("{}", error);
+        std::process::exit(1);
+    }
 
     let app = Router::new()
         .route("/health", get(|| async { (StatusCode::OK, "OK") }))

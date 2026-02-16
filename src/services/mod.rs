@@ -1,4 +1,5 @@
 pub mod expo;
+pub mod deployment_poller;
 pub mod repeater;
 pub mod updater;
 
