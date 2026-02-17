@@ -143,6 +143,8 @@ impl DeploymentPollerService {
             return Ok(());
         };
 
+        println!("Deployment poller initialized");
+
         tokio::spawn(async move {
             loop {
                 match deployment_poller.check_for_deployments().await {
