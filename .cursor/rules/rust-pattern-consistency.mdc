@@ -1,0 +1,38 @@
+---
+description: Keep Rust changes aligned with existing project patterns
+globs: **/*.rs
+alwaysApply: false
+---
+
+# Rust Pattern Consistency
+
+In this repository, Rust changes must preserve existing project patterns unless the user explicitly approves a deviation.
+
+## Operating rules
+
+- Match nearby Rust code first: module layout, naming, imports, visibility (`mod`, `pub mod`, `pub use`), error style, and test style.
+- Reuse existing service and module organization before introducing new abstractions or refactors.
+- If creating new Rust files or folders, mirror current structure conventions under `src/` and `tests/` and keep naming consistent with neighboring files.
+- Do not silently switch architectural style, crate usage style, or error-handling strategy.
+- You may recommend better practices, but present them as suggestions and ask for confirmation before applying them.
+- When no clear local pattern exists, choose the simplest idiomatic Rust implementation that fits the current codebase.
+
+## Decision flow
+
+1. Identify the closest existing Rust pattern in the same area.
+2. Implement using that pattern.
+3. If you see a better approach, suggest it and ask before changing direction.
+4. If no pattern is evident, implement a pragmatic default and state your assumption.
+
+## Examples
+
+```rust
+// ❌ BAD: Applies a new pattern without asking.
+// "I replaced the module/service structure with a new architecture."
+```
+
+```rust
+// ✅ GOOD: Keep current pattern, then ask before deviating.
+// "I can keep the existing service/module pattern for this change.
+// If you want, I can also propose a refactor to <better practice> in a separate step."
+```

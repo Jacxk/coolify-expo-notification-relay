@@ -70,11 +70,15 @@ This is a simple rust server that relays webhook payloads to the Expo push notif
 
 ## Environment variables
 
-| Name                 | Required | Default                                | Description                                                                                  |
-| -------------------- | -------- | -------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `EXPO_PUSH_TOKENS`   | Yes      | —                                      | Comma-separated Expo push tokens (e.g. `ExponentPushToken[xxx]`) that receive notifications. |
-| `EXPO_PUSH_URL`      | No       | `https://exp.host/--/api/v2/push/send` | Expo push API URL.                                                                           |
-| `PORT`               | No       | `3000`                                 | Port the server listens on.                                                                  |
-| `WEBHOOK_PATH`       | No       | `/`                                    | URL path for the webhook endpoint.                                                           |
-| `WEBHOOK_RELAY_URLS` | No       | —                                      | Comma-separated URLs to forward the raw webhook payload to (optional relay).                 |
+| Name                              | Required    | Default                                | Description                                                                                  |
+| --------------------------------- | ----------- | -------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `EXPO_PUSH_TOKENS`                | Yes         | —                                      | Comma-separated Expo push tokens (e.g. `ExponentPushToken[xxx]`) that receive notifications. |
+| `EXPO_PUSH_URL`                   | No          | `https://exp.host/--/api/v2/push/send` | Expo push API URL.                                                                           |
+| `COOLIFY_API_URL`                 | No          | —                                      | Coolify base API URL. Polling requests are sent to `{COOLIFY_API_URL}/api/v1/deployments`.   |
+| `COOLIFY_API_TOKEN`               | Conditional | —                                      | API token used for Coolify API calls. Required when `COOLIFY_API_URL` is set.                |
+| `COOLIFY_API_ENDPOINT`            | No          | `api/v1/deployments`                   | API endpoint for polling deployments.                                                        |
+| `COOLIFY_DEPLOYMENT_POLL_SECONDS` | No          | `10`                                   | Polling interval in seconds for checking `/api/v1/deployments`.                              |
+| `PORT`                            | No          | `3000`                                 | Port the server listens on.                                                                  |
+| `WEBHOOK_PATH`                    | No          | `/`                                    | URL path for the webhook endpoint.                                                           |
+| `WEBHOOK_RELAY_URLS`              | No          | —                                      | Comma-separated URLs to forward the raw webhook payload to (optional relay).                 |
 

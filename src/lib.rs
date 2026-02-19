@@ -6,6 +6,7 @@ pub mod services;
 pub mod state;
 
 pub use services::expo::ExpoService;
+pub use services::deployment_poller::DeploymentPollerService;
 pub use services::repeater::WebhookRepeaterService;
 pub use services::updater::UpdaterService;
 
