@@ -1,17 +1,7 @@
 use std::{env, sync::Arc, time::Duration};
 
-use serde::{Deserialize, Serialize};
-
 use crate::services::expo::{ExpoNotification, ExpoService};
 use crate::state::AppState;
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Deployment {
-    application_id: String,
-    application_name: String,
-    deployment_uuid: String,
-    id: u64,
-}
 
 pub struct DeploymentPollerService {
     pub api_url: String,
@@ -49,7 +39,7 @@ impl DeploymentPollerService {
         )
     }
 
-    pub async fn check_for_deployments(&self) -> Result<Vec<Deployment>, String> {
+    pub async fn check_for_deployments(&self) -> Result<Vec<serde_json::Value>, String> {
         let response = self
             .client
             .get(self.deployments_url())
@@ -63,7 +53,7 @@ impl DeploymentPollerService {
             .await
             .map_err(|e| format!("Failed to read Coolify deployments API response: {}", e))?;
 
-        let payload: Vec<Deployment> = serde_json::from_str(&body)
+        let payload: Vec<serde_json::Value> = serde_json::from_str(&body)
             .map_err(|e| format!("Failed to parse Coolify deployments API response: {}", e))?;
 
         Ok(payload)
@@ -72,33 +62,43 @@ impl DeploymentPollerService {
     pub async fn send_notification_to_device(
         &mut self,
         expo: &ExpoService,
-        payload: Vec<Deployment>,
+        payload: Vec<serde_json::Value>,
     ) {
-        if payload.len() == 0 {
+        if payload.is_empty() {
             self.deployments.clear();
             return;
         }
 
-        let current_uuids = payload
+        let current_uuids: Vec<String> = payload
             .iter()
-            .map(|d| d.deployment_uuid.clone())
-            .collect::<Vec<String>>();
+            .filter_map(|d| d.get("deployment_uuid").and_then(|v| v.as_str()))
+            .map(String::from)
+            .collect();
         self.deployments.retain(|uuid| current_uuids.contains(uuid));
 
         for deployment in payload {
-            let deployment_uuid = &deployment.deployment_uuid;
-            if self.deployments.contains(deployment_uuid) {
+            let Some(deployment_uuid) = deployment
+                .get("deployment_uuid")
+                .and_then(|v| v.as_str())
+                .map(String::from)
+            else {
+                continue;
+            };
+
+            if self.deployments.contains(&deployment_uuid) {
                 continue;
             }
 
-            self.deployments.push(deployment_uuid.clone());
+            self.deployments.push(deployment_uuid);
+
+            let application_name = deployment
+                .get("application_name")
+                .and_then(|v| v.as_str())
+                .unwrap_or("Unknown");
 
             expo.send_notification(ExpoNotification {
                 title: "Deployment Started".to_string(),
-                body: format!(
-                    "New deployment has started for {}",
-                    deployment.application_name
-                ),
+                body: format!("New deployment has started for {}", application_name),
                 data: deployment,
             })
             .await;
