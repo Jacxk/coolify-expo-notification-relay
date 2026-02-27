@@ -1,6 +1,9 @@
 use std::{env, sync::Arc, time::Duration};
 
-use crate::services::expo::{ExpoNotification, ExpoService};
+use axum::Json;
+use axum::extract::State;
+
+use crate::services;
 use crate::state::AppState;
 
 pub struct DeploymentPollerService {
@@ -59,9 +62,9 @@ impl DeploymentPollerService {
         Ok(payload)
     }
 
-    pub async fn send_notification_to_device(
+    pub async fn handle_deployments(
         &mut self,
-        expo: &ExpoService,
+        state: Arc<AppState>,
         payload: Vec<serde_json::Value>,
     ) {
         if payload.is_empty() {
@@ -91,17 +94,12 @@ impl DeploymentPollerService {
 
             self.deployments.push(deployment_uuid);
 
-            let application_name = deployment
-                .get("application_name")
-                .and_then(|v| v.as_str())
-                .unwrap_or("Unknown");
+            let Ok(json) = serde_json::to_value(deployment) else {
+                eprintln!("Failed to serialize deployment");
+                continue;
+            };
 
-            expo.send_notification(ExpoNotification {
-                title: "Deployment Started".to_string(),
-                body: format!("New deployment has started for {}", application_name),
-                data: deployment,
-            })
-            .await;
+            services::handle_webhook(State(state.clone()), Json(json)).await;
         }
     }
 
@@ -150,7 +148,7 @@ impl DeploymentPollerService {
                 match deployment_poller.check_for_deployments().await {
                     Ok(payload) => {
                         deployment_poller
-                            .send_notification_to_device(&state.expo, payload)
+                            .handle_deployments(state.clone(), payload)
                             .await;
                     }
                     Err(error) => eprintln!("{}", error),

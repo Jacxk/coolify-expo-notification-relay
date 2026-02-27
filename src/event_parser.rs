@@ -18,6 +18,7 @@ pub fn parse_event(payload: &WebhookPayload) -> Notification {
         "server_unreachable" => server_unreachable(payload),
         "high_disk_usage" => high_disk_usage(payload),
         // deployment
+        "deployment_started" => deployment_started(payload),
         "deployment_success" => deployment_success(payload),
         "deployment_failed" => deployment_failed(payload),
         // container
@@ -154,6 +155,14 @@ fn high_disk_usage(payload: &WebhookPayload) -> Notification {
 // ---------------------------------------------------------------------------
 // Deployment
 // ---------------------------------------------------------------------------
+
+fn deployment_started(payload: &WebhookPayload) -> Notification {
+    let app = payload.application_name.as_deref().unwrap_or("unknown");
+    Notification {
+        title: "Deployment Started".to_string(),
+        body: format!("Deployment of {} has started", app),
+    }
+}
 
 fn deployment_success(payload: &WebhookPayload) -> Notification {
     let title = if payload.preview_fqdn.is_some() {
