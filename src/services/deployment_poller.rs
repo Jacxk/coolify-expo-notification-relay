@@ -3,8 +3,8 @@ use std::{env, sync::Arc, time::Duration};
 use axum::Json;
 use axum::extract::State;
 
-use crate::services;
 use crate::state::AppState;
+use crate::{services};
 
 pub struct DeploymentPollerService {
     pub api_url: String,
@@ -64,7 +64,7 @@ impl DeploymentPollerService {
 
     pub async fn handle_deployments(
         &mut self,
-        state: Arc<AppState>,
+        state: &Arc<AppState>,
         payload: Vec<serde_json::Value>,
     ) {
         if payload.is_empty() {
@@ -94,10 +94,17 @@ impl DeploymentPollerService {
 
             self.deployments.push(deployment_uuid);
 
-            let Ok(json) = serde_json::to_value(deployment) else {
+            let Ok(mut json) = serde_json::to_value(deployment) else {
                 eprintln!("Failed to serialize deployment");
                 continue;
             };
+
+            if let serde_json::Value::Object(ref mut map) = json {
+                map.insert(
+                    "event".to_string(),
+                    serde_json::Value::String("deployment_started".to_string()),
+                );
+            }
 
             services::handle_webhook(State(state.clone()), Json(json)).await;
         }
@@ -144,12 +151,11 @@ impl DeploymentPollerService {
         println!("Deployment poller initialized");
 
         tokio::spawn(async move {
+            let state = state.clone();
             loop {
                 match deployment_poller.check_for_deployments().await {
                     Ok(payload) => {
-                        deployment_poller
-                            .handle_deployments(state.clone(), payload)
-                            .await;
+                        deployment_poller.handle_deployments(&state, payload).await;
                     }
                     Err(error) => eprintln!("{}", error),
                 }
