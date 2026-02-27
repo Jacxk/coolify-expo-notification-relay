@@ -160,7 +160,7 @@ fn deployment_started(payload: &WebhookPayload) -> Notification {
     let app = payload.application_name.as_deref().unwrap_or("unknown");
     Notification {
         title: "Deployment Started".to_string(),
-        body: format!("Deployment of {} has started", app),
+        body: format!("New deployment has started for {}", app),
     }
 }
 
