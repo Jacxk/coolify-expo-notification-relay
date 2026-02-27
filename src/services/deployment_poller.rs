@@ -1,7 +1,10 @@
 use std::{env, sync::Arc, time::Duration};
 
-use crate::services::expo::{ExpoNotification, ExpoService};
+use axum::Json;
+use axum::extract::State;
+
 use crate::state::AppState;
+use crate::{services};
 
 pub struct DeploymentPollerService {
     pub api_url: String,
@@ -59,9 +62,9 @@ impl DeploymentPollerService {
         Ok(payload)
     }
 
-    pub async fn send_notification_to_device(
+    pub async fn handle_deployments(
         &mut self,
-        expo: &ExpoService,
+        state: &Arc<AppState>,
         payload: Vec<serde_json::Value>,
     ) {
         if payload.is_empty() {
@@ -91,17 +94,19 @@ impl DeploymentPollerService {
 
             self.deployments.push(deployment_uuid);
 
-            let application_name = deployment
-                .get("application_name")
-                .and_then(|v| v.as_str())
-                .unwrap_or("Unknown");
+            let Ok(mut json) = serde_json::to_value(deployment) else {
+                eprintln!("Failed to serialize deployment");
+                continue;
+            };
 
-            expo.send_notification(ExpoNotification {
-                title: "Deployment Started".to_string(),
-                body: format!("New deployment has started for {}", application_name),
-                data: deployment,
-            })
-            .await;
+            if let serde_json::Value::Object(ref mut map) = json {
+                map.insert(
+                    "event".to_string(),
+                    serde_json::Value::String("deployment_started".to_string()),
+                );
+            }
+
+            services::handle_webhook(State(state.clone()), Json(json)).await;
         }
     }
 
@@ -146,12 +151,11 @@ impl DeploymentPollerService {
         println!("Deployment poller initialized");
 
         tokio::spawn(async move {
+            let state = state.clone();
             loop {
                 match deployment_poller.check_for_deployments().await {
                     Ok(payload) => {
-                        deployment_poller
-                            .send_notification_to_device(&state.expo, payload)
-                            .await;
+                        deployment_poller.handle_deployments(&state, payload).await;
                     }
                     Err(error) => eprintln!("{}", error),
                 }
